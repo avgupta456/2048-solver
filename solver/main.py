@@ -1,5 +1,6 @@
 from algorithms.base import Algo
 from algorithms.random import RandomAlgo
+from algorithms.expectimax import ExpectimaxAlgo
 
 from game import get_initial_state, print_board, is_game_over, make_move
 
@@ -17,4 +18,4 @@ def simulate(algo: Algo):
     print('Game over!')
 
 
-simulate(RandomAlgo())
+simulate(ExpectimaxAlgo())
