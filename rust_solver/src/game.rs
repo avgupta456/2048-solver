@@ -209,7 +209,7 @@ pub fn is_game_over(state: u64) -> bool {
     get_possible_moves(state).len() == 0
 }
 
-fn get_score(state: u64) -> u64 {
+pub fn get_score(state: u64) -> u64 {
     let mut score = 0;
     for y in 0..4 {
         for x in 0..4 {
