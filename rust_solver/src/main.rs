@@ -21,7 +21,7 @@ fn run_game(precomputed: &Precomputed) -> (u64, u64) {
 }
 
 fn main() {
-    if !std::path::Path::new("move_left.json").exists() {
+    if !std::path::Path::new("precomputed.json").exists() {
         println!("Precomputing...");
         precompute();
     }

@@ -11,23 +11,22 @@ PRECOMPUTATION INFRASTRUCTURE
 */
 
 #[derive(Serialize, Deserialize)]
-struct Data {
-    values: Vec<u16>,
+pub struct Precomputed {
+    move_left: Vec<u16>,
+    move_right: Vec<u16>,
 }
 
-fn _save_precomputed(file_name: String, data: Vec<u16>) {
-    let data = Data { values: data };
+fn _save_precomputed(file_name: String, data: Precomputed) {
     let json_string = to_string(&data).unwrap();
     std::fs::write(file_name, json_string).unwrap();
 }
 
-fn _load_precomputed(file_name: String) -> Vec<u16> {
+fn _load_precomputed(file_name: String) -> Precomputed {
     let json_string = std::fs::read_to_string(file_name).unwrap();
-    let data: Data = from_str(&json_string).unwrap();
-    data.values
+    from_str(&json_string).unwrap()
 }
 
-fn _precompute_move(file_name: String, func: fn(u16) -> u16) {
+fn _precompute_move(func: fn(u16) -> u16) -> Vec<u16> {
     let mut precomputed = vec![0; 65536];
     for i in 0..16 {
         for j in 0..16 {
@@ -42,24 +41,21 @@ fn _precompute_move(file_name: String, func: fn(u16) -> u16) {
         }
     }
 
-    _save_precomputed(file_name, precomputed);
+    precomputed
 }
 
 pub fn precompute() {
-    _precompute_move("move_left.json".to_string(), move_left);
-    _precompute_move("move_right.json".to_string(), move_right);
-}
-
-pub struct Precomputed {
-    move_left: Vec<u16>,
-    move_right: Vec<u16>,
+    let move_left = _precompute_move(move_left);
+    let move_right = _precompute_move(move_right);
+    let precomputed = Precomputed {
+        move_left,
+        move_right,
+    };
+    _save_precomputed("precomputed.json".to_string(), precomputed);
 }
 
 pub fn load_precomputed() -> Precomputed {
-    Precomputed {
-        move_left: _load_precomputed("move_left.json".to_string()),
-        move_right: _load_precomputed("move_right.json".to_string()),
-    }
+    _load_precomputed("precomputed.json".to_string())
 }
 
 /*
@@ -140,7 +136,19 @@ pub fn get_possible_moves(state: u64, precomputed: &Precomputed) -> Vec<Directio
 }
 
 pub fn is_game_over(state: u64, precomputed: &Precomputed) -> bool {
-    get_possible_moves(state, precomputed).len() == 0
+    if move_state(state, Direction::Left, false, precomputed) != state {
+        return false;
+    }
+    if move_state(state, Direction::Right, false, precomputed) != state {
+        return false;
+    }
+    if move_state(state, Direction::Up, false, precomputed) != state {
+        return false;
+    }
+    if move_state(state, Direction::Down, false, precomputed) != state {
+        return false;
+    }
+    true
 }
 
 #[cfg(test)]
