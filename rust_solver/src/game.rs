@@ -1,16 +1,27 @@
-// import rand;
 use rand;
 
-fn pow(x: u8) -> u64 {
-    2u64.pow(x as u32)
+/*
+ENUMS
+*/
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum Direction {
+    Left,
+    Right,
+    Up,
+    Down,
 }
+
+/*
+LOW-LEVEL BOARD MANIPULATION
+*/
 
 fn get_tile(state: u64, x: u8, y: u8) -> u8 {
     let shift = (x + y * 4) * 4;
     ((state >> shift) & 0xf) as u8
 }
 
-fn to_grid(state: u64) -> [[u8; 4]; 4] {
+pub fn to_grid(state: u64) -> [[u8; 4]; 4] {
     let mut grid = [[0; 4]; 4];
     for y in 0..4 {
         for x in 0..4 {
@@ -25,7 +36,7 @@ fn set_tile(state: u64, x: u8, y: u8, value: u8) -> u64 {
     (state & !(0xf << shift)) | ((value as u64) << shift)
 }
 
-fn from_grid(grid: [[u8; 4]; 4]) -> u64 {
+pub fn from_grid(grid: [[u8; 4]; 4]) -> u64 {
     let mut state = 0;
     for y in 0..4 {
         for x in 0..4 {
@@ -36,7 +47,7 @@ fn from_grid(grid: [[u8; 4]; 4]) -> u64 {
 }
 
 // From https://github.com/aszczepanski/2048
-fn transpose(state: u64) -> u64 {
+pub fn transpose(state: u64) -> u64 {
     let a1 = state & 0xF0F00F0FF0F00F0F;
     let a2 = state & 0x0000F0F00000F0F0;
     let a3 = state & 0x0F0F00000F0F0000;
@@ -47,7 +58,7 @@ fn transpose(state: u64) -> u64 {
     b1 | (b2 >> 24) | (b3 << 24)
 }
 
-fn get_rows(state: u64) -> Vec<u16> {
+pub fn get_rows(state: u64) -> Vec<u16> {
     let mut rows = Vec::new();
     for y in 0..4 {
         rows.push(((state >> (y * 16)) & 0xffff) as u16);
@@ -55,7 +66,7 @@ fn get_rows(state: u64) -> Vec<u16> {
     rows
 }
 
-fn set_rows(rows: Vec<u16>) -> u64 {
+pub fn set_rows(rows: Vec<u16>) -> u64 {
     let mut state = 0;
     for y in 0..4 {
         state |= (rows[y] as u64) << (y * 16);
@@ -63,17 +74,22 @@ fn set_rows(rows: Vec<u16>) -> u64 {
     state
 }
 
-fn get_cols(state: u64) -> Vec<u16> {
+pub fn get_cols(state: u64) -> Vec<u16> {
     let t = transpose(state);
     get_rows(t)
 }
 
-fn set_cols(cols: Vec<u16>) -> u64 {
+pub fn set_cols(cols: Vec<u16>) -> u64 {
     let t = set_rows(cols);
     transpose(t)
 }
 
-fn get_empty_tiles(state: u64) -> Vec<u8> {
+/*
+BOARD OPERATIONS, NOT PRECOMPUTED
+*/
+
+// TODO: Move to precomputed
+pub fn get_empty_tiles(state: u64) -> Vec<u8> {
     let mut empty_tiles = Vec::new();
     for y in 0..4 {
         for x in 0..4 {
@@ -85,7 +101,7 @@ fn get_empty_tiles(state: u64) -> Vec<u8> {
     empty_tiles
 }
 
-fn add_random_tile(state: u64) -> u64 {
+pub fn add_random_tile(state: u64) -> u64 {
     let empty_tiles = get_empty_tiles(state);
     if empty_tiles.len() == 0 {
         return state;
@@ -104,6 +120,10 @@ pub fn get_initial_state() -> u64 {
     state = add_random_tile(state);
     state
 }
+
+/*
+GETS PRECOMPUTED, DO NOT CALL DIRECTLY
+*/
 
 fn merge(row: u16) -> u16 {
     let mut arr: Vec<u8> = Vec::new();
@@ -129,85 +149,17 @@ fn reverse(row: u16) -> u16 {
     ((row & 0xf) << 12) | ((row & 0xf0) << 4) | ((row & 0xf00) >> 4) | ((row & 0xf000) >> 12)
 }
 
-fn move_left(state: u64) -> u64 {
-    let mut rows = get_rows(state);
-    for y in 0..4 {
-        let merged = merge(rows[y]);
-        rows[y] = merged;
-    }
-    set_rows(rows)
+pub fn move_left(row: u16) -> u16 {
+    merge(row)
 }
 
-fn move_right(state: u64) -> u64 {
-    let mut rows = get_rows(state);
-    for y in 0..4 {
-        let merged = merge(reverse(rows[y]));
-        rows[y] = reverse(merged);
-    }
-    set_rows(rows)
+pub fn move_right(row: u16) -> u16 {
+    reverse(merge(reverse(row)))
 }
 
-fn move_up(state: u64) -> u64 {
-    let mut cols = get_cols(state);
-    for x in 0..4 {
-        let merged = merge(cols[x]);
-        cols[x] = merged;
-    }
-    set_cols(cols)
-}
-
-fn move_down(state: u64) -> u64 {
-    let mut cols = get_cols(state);
-    for x in 0..4 {
-        let merged = merge(reverse(cols[x]));
-        cols[x] = reverse(merged);
-    }
-    set_cols(cols)
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum Direction {
-    Left,
-    Right,
-    Up,
-    Down,
-}
-
-pub fn get_possible_moves(state: u64) -> Vec<Direction> {
-    let mut moves = Vec::new();
-    if move_left(state) != state {
-        moves.push(Direction::Left);
-    }
-    if move_right(state) != state {
-        moves.push(Direction::Right);
-    }
-    if move_up(state) != state {
-        moves.push(Direction::Up);
-    }
-    if move_down(state) != state {
-        moves.push(Direction::Down);
-    }
-    moves
-}
-
-pub fn move_state(state: u64, direction: Direction, add_random: bool) -> u64 {
-    let state = match direction {
-        Direction::Left => move_left(state),
-        Direction::Right => move_right(state),
-        Direction::Up => move_up(state),
-        Direction::Down => move_down(state),
-    };
-
-    if add_random {
-        add_random_tile(state)
-    } else {
-        state
-    }
-}
-
-pub fn is_game_over(state: u64) -> bool {
-    get_possible_moves(state).len() == 0
-}
+/*
+HELPER FUNCTIONS
+*/
 
 pub fn get_score(state: u64) -> u64 {
     let mut score = 0;
@@ -215,7 +167,7 @@ pub fn get_score(state: u64) -> u64 {
         for x in 0..4 {
             let value = get_tile(state, x, y);
             if value > 0 {
-                score += ((value - 1) as u64) * pow(value);
+                score += ((value - 1) as u64) * 2u64.pow(value as u32);
             }
         }
     }
@@ -230,7 +182,7 @@ pub fn print_board(state: u64) {
             if value == 0 {
                 print!(".\t");
             } else {
-                print!("{}\t", pow(value));
+                print!("{}\t", 2u64.pow(value as u32));
             }
         }
         println!();
@@ -474,103 +426,7 @@ mod tests {
         assert_eq!(row, 0x4321);
     }
 
-    #[test]
-    fn test_move_left() {
-        let mut grid = [[0, 0, 1, 1], [0, 2, 0, 2], [0, 0, 0, 3], [1, 1, 1, 1]];
-        let mut state = from_grid(grid);
-        state = move_left(state);
-        grid = to_grid(state);
-        assert_eq!(
-            grid,
-            [[2, 0, 0, 0], [3, 0, 0, 0], [3, 0, 0, 0], [2, 2, 0, 0]]
-        );
-    }
-
-    #[test]
-    fn test_move_right() {
-        let mut grid = [[0, 0, 1, 1], [0, 2, 0, 2], [0, 0, 0, 3], [1, 1, 1, 1]];
-        let mut state = from_grid(grid);
-        state = move_right(state);
-        grid = to_grid(state);
-        assert_eq!(
-            grid,
-            [[0, 0, 0, 2], [0, 0, 0, 3], [0, 0, 0, 3], [0, 0, 2, 2]]
-        );
-    }
-
-    #[test]
-    fn test_move_up() {
-        let mut grid = [[0, 0, 1, 1], [0, 2, 0, 2], [0, 0, 0, 3], [1, 1, 1, 1]];
-        let mut state = from_grid(grid);
-        state = move_up(state);
-        grid = to_grid(state);
-        assert_eq!(
-            grid,
-            [[1, 2, 2, 1], [0, 1, 0, 2], [0, 0, 0, 3], [0, 0, 0, 1]]
-        );
-    }
-
-    #[test]
-    fn test_move_down() {
-        let mut grid = [[0, 0, 1, 1], [0, 2, 0, 2], [0, 0, 0, 3], [1, 1, 1, 1]];
-        let mut state = from_grid(grid);
-        state = move_down(state);
-        grid = to_grid(state);
-        assert_eq!(
-            grid,
-            [[0, 0, 0, 1], [0, 0, 0, 2], [0, 2, 0, 3], [1, 1, 2, 1]]
-        );
-    }
-
-    #[test]
-    fn test_get_possible_moves() {
-        let mut grid = [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]];
-        let mut state = from_grid(grid);
-        let possible_moves = get_possible_moves(state);
-        assert_eq!(possible_moves.len(), 2);
-        assert_eq!(possible_moves[0], Direction::Right);
-        assert_eq!(possible_moves[1], Direction::Down);
-
-        grid = [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]];
-        state = from_grid(grid);
-        let possible_moves = get_possible_moves(state);
-        assert_eq!(possible_moves.len(), 4);
-
-        grid = [[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 1]];
-        state = from_grid(grid);
-        let possible_moves = get_possible_moves(state);
-        assert_eq!(possible_moves.len(), 0);
-    }
-
-    #[test]
-    fn test_move_state() {
-        let mut grid = [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]];
-        let mut state = from_grid(grid);
-        state = move_state(state, Direction::Right, false);
-        grid = to_grid(state);
-        assert_eq!(
-            grid,
-            [[0, 0, 0, 1], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
-        );
-        state = move_state(state, Direction::Down, false);
-        grid = to_grid(state);
-        assert_eq!(
-            grid,
-            [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]
-        );
-        state = move_state(state, Direction::Left, true);
-        assert_eq!(get_empty_tiles(state).len(), 14);
-    }
-
-    #[test]
-    fn test_is_game_over() {
-        let mut grid = [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]];
-        let mut state = from_grid(grid);
-        assert_eq!(is_game_over(state), false);
-        grid = [[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 1]];
-        state = from_grid(grid);
-        assert_eq!(is_game_over(state), true);
-    }
+    // TODO: test_move_left and test_move_right
 
     #[test]
     fn test_get_score() {
