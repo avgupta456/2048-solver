@@ -1,4 +1,3 @@
-// correctly import into main.rs
 mod game;
 use game::{get_initial_state, get_score};
 
@@ -22,9 +21,12 @@ fn run_game(precomputed: &Precomputed) -> (u64, u64) {
 }
 
 fn main() {
-    // precompute();
+    if !std::path::Path::new("move_left.json").exists() {
+        println!("Precomputing...");
+        precompute();
+    }
     let precomputed: &Precomputed = &load_precomputed();
-    println!("Precomputed");
+    println!("Loaded precomputed data!");
 
     let start = std::time::Instant::now();
     let time = 10;
