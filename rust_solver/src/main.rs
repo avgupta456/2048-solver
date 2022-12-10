@@ -1,10 +1,10 @@
-mod game;
-use game::{get_initial_state, get_score};
+pub mod game;
+use game::{add_random_tile, get_initial_state, get_score};
 
-mod precompute;
-use precompute::{is_game_over, load_precomputed, move_state, precompute, Precomputed};
+pub mod precompute;
+use precompute::{get_possible_moves, load_precomputed, precompute, Precomputed};
 
-mod algorithms {
+pub mod algorithms {
     pub mod random;
 }
 use algorithms::random::get_random_move;
@@ -12,9 +12,11 @@ use algorithms::random::get_random_move;
 fn run_game(precomputed: &Precomputed) -> (u64, u64) {
     let mut num_moves = 0;
     let mut state = get_initial_state();
-    while !is_game_over(state, precomputed) {
-        let move_ = get_random_move(state, precomputed);
-        state = move_state(state, move_, true, precomputed);
+    let mut moves = get_possible_moves(state, precomputed);
+    while moves.len() > 0 {
+        let (_move, new_state) = get_random_move(state, moves, precomputed);
+        state = add_random_tile(new_state);
+        moves = get_possible_moves(state, precomputed);
         num_moves += 1;
     }
     (get_score(state), num_moves)

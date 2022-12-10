@@ -1,8 +1,11 @@
 use crate::game::Direction;
-use crate::precompute::{get_possible_moves, Precomputed};
+use crate::precompute::Precomputed;
 
-pub fn get_random_move(state: u64, precomputed: &Precomputed) -> Direction {
-    let mut moves = get_possible_moves(state, precomputed);
+pub fn get_random_move(
+    _state: u64,
+    moves: Vec<(Direction, u64)>,
+    _precomputed: &Precomputed,
+) -> (Direction, u64) {
     let index = rand::random::<usize>() % moves.len();
-    moves.remove(index)
+    moves[index]
 }

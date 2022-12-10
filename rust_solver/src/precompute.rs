@@ -1,10 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
 
-use crate::game::{
-    add_random_tile, from_grid, get_cols, get_empty_tiles, get_rows, move_left, move_right,
-    set_cols, set_rows, to_grid, transpose, Direction,
-};
+use crate::game::{get_cols, get_rows, move_left, move_right, transpose, Direction};
 
 /*
 PRECOMPUTATION INFRASTRUCTURE
@@ -45,6 +42,7 @@ fn _precompute_move(func: fn(u16) -> u16) -> Vec<u16> {
 }
 
 pub fn precompute() {
+    // TODO: document what each of these are
     let move_left = _precompute_move(move_left);
     let move_right = _precompute_move(move_right);
     let precomputed = Precomputed {
@@ -62,7 +60,7 @@ pub fn load_precomputed() -> Precomputed {
 PRECOMPUTED FUNCTIONS
 */
 
-fn _move_state(state: u64, direction: Direction, precomputed: &Precomputed) -> u64 {
+pub fn move_state(state: u64, direction: Direction, precomputed: &Precomputed) -> u64 {
     match direction {
         Direction::Left | Direction::Right => {
             let rows = get_rows(state);
@@ -104,48 +102,38 @@ fn _move_state(state: u64, direction: Direction, precomputed: &Precomputed) -> u
     }
 }
 
-pub fn move_state(
-    state: u64,
-    direction: Direction,
-    add_random: bool,
-    precomputed: &Precomputed,
-) -> u64 {
-    let state = _move_state(state, direction, precomputed);
-    if add_random {
-        add_random_tile(state)
-    } else {
-        state
-    }
-}
-
-pub fn get_possible_moves(state: u64, precomputed: &Precomputed) -> Vec<Direction> {
+pub fn get_possible_moves(state: u64, precomputed: &Precomputed) -> Vec<(Direction, u64)> {
     let mut moves = Vec::new();
-    if move_state(state, Direction::Left, false, precomputed) != state {
-        moves.push(Direction::Left);
+    let left = move_state(state, Direction::Left, precomputed);
+    if left != state {
+        moves.push((Direction::Left, left));
     }
-    if move_state(state, Direction::Right, false, precomputed) != state {
-        moves.push(Direction::Right);
+    let right = move_state(state, Direction::Right, precomputed);
+    if right != state {
+        moves.push((Direction::Right, right));
     }
-    if move_state(state, Direction::Up, false, precomputed) != state {
-        moves.push(Direction::Up);
+    let up = move_state(state, Direction::Up, precomputed);
+    if up != state {
+        moves.push((Direction::Up, up));
     }
-    if move_state(state, Direction::Down, false, precomputed) != state {
-        moves.push(Direction::Down);
+    let down = move_state(state, Direction::Down, precomputed);
+    if down != state {
+        moves.push((Direction::Down, down));
     }
     moves
 }
 
 pub fn is_game_over(state: u64, precomputed: &Precomputed) -> bool {
-    if move_state(state, Direction::Left, false, precomputed) != state {
+    if move_state(state, Direction::Left, precomputed) != state {
         return false;
     }
-    if move_state(state, Direction::Right, false, precomputed) != state {
+    if move_state(state, Direction::Right, precomputed) != state {
         return false;
     }
-    if move_state(state, Direction::Up, false, precomputed) != state {
+    if move_state(state, Direction::Up, precomputed) != state {
         return false;
     }
-    if move_state(state, Direction::Down, false, precomputed) != state {
+    if move_state(state, Direction::Down, precomputed) != state {
         return false;
     }
     true
@@ -154,6 +142,7 @@ pub fn is_game_over(state: u64, precomputed: &Precomputed) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::game::{from_grid, to_grid};
 
     #[test]
     fn test_move_state() {
@@ -161,7 +150,7 @@ mod tests {
 
         let mut grid = [[3, 4, 5, 6], [0, 0, 5, 6], [1, 1, 1, 1], [0, 5, 5, 0]];
         let mut state = from_grid(grid);
-        state = move_state(state, Direction::Left, false, precomputed);
+        state = move_state(state, Direction::Left, precomputed);
         grid = to_grid(state);
         assert_eq!(
             grid,
@@ -170,7 +159,7 @@ mod tests {
 
         grid = [[1, 1, 0, 0], [0, 2, 0, 2], [3, 3, 4, 0], [0, 0, 0, 0]];
         state = from_grid(grid);
-        state = move_state(state, Direction::Right, false, precomputed);
+        state = move_state(state, Direction::Right, precomputed);
         grid = to_grid(state);
         assert_eq!(
             grid,
@@ -179,7 +168,7 @@ mod tests {
 
         grid = [[1, 1, 2, 0], [1, 2, 0, 4], [0, 2, 2, 4], [0, 2, 0, 0]];
         state = from_grid(grid);
-        state = move_state(state, Direction::Up, false, precomputed);
+        state = move_state(state, Direction::Up, precomputed);
         grid = to_grid(state);
         assert_eq!(
             grid,
@@ -188,7 +177,7 @@ mod tests {
 
         grid = [[0, 1, 2, 3], [0, 1, 0, 3], [3, 2, 2, 3], [3, 0, 0, 4]];
         state = from_grid(grid);
-        state = move_state(state, Direction::Down, false, precomputed);
+        state = move_state(state, Direction::Down, precomputed);
         grid = to_grid(state);
         assert_eq!(
             grid,
@@ -204,8 +193,9 @@ mod tests {
         let mut state = from_grid(grid);
         let possible_moves = get_possible_moves(state, precomputed);
         assert_eq!(possible_moves.len(), 2);
-        assert_eq!(possible_moves[0], Direction::Right);
-        assert_eq!(possible_moves[1], Direction::Down);
+        // assert first element of tuple is direction::right
+        assert_eq!(possible_moves[0].0, Direction::Right);
+        assert_eq!(possible_moves[1].0, Direction::Down);
 
         grid = [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]];
         state = from_grid(grid);
