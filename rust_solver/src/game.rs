@@ -31,7 +31,7 @@ pub fn to_grid(state: u64) -> [[u8; 4]; 4] {
     grid
 }
 
-fn set_tile(state: u64, x: u8, y: u8, value: u8) -> u64 {
+pub fn set_tile(state: u64, x: u8, y: u8, value: u8) -> u64 {
     let shift = (x + y * 4) * 4;
     (state & !(0xf << shift)) | ((value as u64) << shift)
 }
@@ -135,17 +135,19 @@ fn merge(row: u16) -> u16 {
         if arr.len() > 0 && arr[arr.len() - 1] == value {
             let prev = arr.pop().unwrap();
             arr.push(prev + 1);
+            arr.push(100); // blocks double merge
         } else {
             arr.push(value);
         }
     }
+    arr = arr.into_iter().filter(|&x| x != 100).collect();
     for _ in arr.len()..4 {
         arr.push(0);
     }
     (arr[0] as u16) | ((arr[1] as u16) << 4) | ((arr[2] as u16) << 8) | ((arr[3] as u16) << 12)
 }
 
-fn reverse(row: u16) -> u16 {
+pub fn reverse(row: u16) -> u16 {
     ((row & 0xf) << 12) | ((row & 0xf0) << 4) | ((row & 0xf00) >> 4) | ((row & 0xf000) >> 12)
 }
 
@@ -411,6 +413,9 @@ mod tests {
         row = 0x2230;
         row = merge(row);
         assert_eq!(row, 0x0033);
+        row = 0x0433;
+        row = merge(row);
+        assert_eq!(row, 0x0044);
     }
 
     #[test]
