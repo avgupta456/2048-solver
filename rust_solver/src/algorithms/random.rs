@@ -1,12 +1,12 @@
-use crate::game::Direction;
+use crate::game::{Direction, State};
 use crate::precompute::Precomputed;
 
 #[allow(dead_code)]
 pub fn get_random_move(
-    _state: u64,
-    moves: Vec<(Direction, u64)>,
+    _state: State,
+    moves: Vec<(Direction, State)>,
     _precomputed: &Precomputed,
-) -> (Direction, u64) {
+) -> (Direction, State) {
     let index = rand::random::<usize>() % moves.len();
     moves[index]
 }

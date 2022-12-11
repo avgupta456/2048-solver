@@ -1,36 +1,34 @@
 use std::cmp;
 
 #[allow(unused_imports)]
-use crate::game::{get_empty_tiles, get_score, set_tile, to_grid, Direction};
+use crate::game::{Direction, State};
 use crate::precompute::{get_possible_moves, Precomputed};
 
-fn heuristic(state: u64) -> u64 {
-    let grid = to_grid(state);
-
+fn heuristic(state: State) -> u64 {
     let pow_grid = [
         [
-            2u64.pow(grid[0][0] as u32),
-            2u64.pow(grid[0][1] as u32),
-            2u64.pow(grid[0][2] as u32),
-            2u64.pow(grid[0][3] as u32),
+            2u64.pow(state.grid[0][0] as u32),
+            2u64.pow(state.grid[0][1] as u32),
+            2u64.pow(state.grid[0][2] as u32),
+            2u64.pow(state.grid[0][3] as u32),
         ],
         [
-            2u64.pow(grid[1][0] as u32),
-            2u64.pow(grid[1][1] as u32),
-            2u64.pow(grid[1][2] as u32),
-            2u64.pow(grid[1][3] as u32),
+            2u64.pow(state.grid[1][0] as u32),
+            2u64.pow(state.grid[1][1] as u32),
+            2u64.pow(state.grid[1][2] as u32),
+            2u64.pow(state.grid[1][3] as u32),
         ],
         [
-            2u64.pow(grid[2][0] as u32),
-            2u64.pow(grid[2][1] as u32),
-            2u64.pow(grid[2][2] as u32),
-            2u64.pow(grid[2][3] as u32),
+            2u64.pow(state.grid[2][0] as u32),
+            2u64.pow(state.grid[2][1] as u32),
+            2u64.pow(state.grid[2][2] as u32),
+            2u64.pow(state.grid[2][3] as u32),
         ],
         [
-            2u64.pow(grid[3][0] as u32),
-            2u64.pow(grid[3][1] as u32),
-            2u64.pow(grid[3][2] as u32),
-            2u64.pow(grid[3][3] as u32),
+            2u64.pow(state.grid[3][0] as u32),
+            2u64.pow(state.grid[3][1] as u32),
+            2u64.pow(state.grid[3][2] as u32),
+            2u64.pow(state.grid[3][3] as u32),
         ],
     ];
 
@@ -82,7 +80,7 @@ fn heuristic(state: u64) -> u64 {
 }
 
 fn _get_expectimax_move(
-    state: u64,
+    state: State,
     prob: f32,
     depth: u16,
     min_prob: f32,
@@ -99,14 +97,15 @@ fn _get_expectimax_move(
 
     let mut best_move = (moves[0].0, 0.0);
     for (direction, next_state) in moves {
-        let empty_tiles = get_empty_tiles(next_state);
+        let empty_tiles = next_state.get_empty_tiles();
         let frac = 1.0 / (empty_tiles.len() as f32);
         let mut next_score = 0.0;
         let mut denom = 0.0;
         for tile in empty_tiles {
             let x = tile % 4;
             let y = tile / 4;
-            let temp_state = set_tile(next_state, x, y, 1);
+            let mut temp_state = next_state;
+            temp_state.grid[y as usize][x as usize] = 1;
             let _next_score = _get_expectimax_move(
                 temp_state,
                 prob * frac * 0.9,
@@ -118,7 +117,8 @@ fn _get_expectimax_move(
             denom += frac * 0.9;
 
             if prob * frac * 0.1 > min_prob {
-                let temp_state = set_tile(next_state, x, y, 2);
+                let mut temp_state = next_state;
+                temp_state.grid[y as usize][x as usize] = 2;
                 let _next_score = _get_expectimax_move(
                     temp_state,
                     prob * frac * 0.1,
@@ -140,11 +140,11 @@ fn _get_expectimax_move(
 }
 
 pub fn get_expectimax_move(
-    state: u64,
-    moves: Vec<(Direction, u64)>,
+    state: State,
+    moves: Vec<(Direction, State)>,
     depth: u16,
     precomputed: &Precomputed,
-) -> (Direction, u64) {
+) -> (Direction, State) {
     let min_prob = 0.1 / ((1 << (depth + 4)) as f32);
     let (direction, _) = _get_expectimax_move(state, 1.0, depth, min_prob, precomputed);
     println!("Expectimax move: {:?}", direction);

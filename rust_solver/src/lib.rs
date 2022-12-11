@@ -4,7 +4,7 @@ Need to manually update this if main.rs changes
 */
 
 pub mod game;
-use game::{add_random_tile, get_initial_state, get_score};
+use game::State;
 
 pub mod precompute;
 use precompute::{get_possible_moves, load_precomputed as _load_precomputed, Precomputed};
@@ -24,13 +24,13 @@ pub fn load_precomputed() -> Precomputed {
 
 pub fn run_game(precomputed: &Precomputed) -> (u64, u64) {
     let mut num_moves = 0;
-    let mut state = get_initial_state();
+    let mut state = State::new();
     let mut moves = get_possible_moves(state, precomputed);
     while moves.len() > 0 {
-        let (_move, new_state) = get_expectimax_move(state, moves, 2, precomputed);
-        state = add_random_tile(new_state);
+        let (_move, new_state) = get_random_move(state, moves, precomputed);
+        state = new_state.add_random_tile();
         moves = get_possible_moves(state, precomputed);
         num_moves += 1;
     }
-    (get_score(state), num_moves)
+    (state.get_score(), num_moves)
 }
