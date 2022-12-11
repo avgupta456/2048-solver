@@ -1,7 +1,10 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
 
-use crate::game::{get_cols, get_rows, move_left, move_right, transpose, Direction};
+#[allow(unused_imports)]
+use crate::game::{
+    from_grid, get_cols, get_rows, move_left, move_right, to_grid, transpose, Direction,
+};
 
 /*
 PRECOMPUTATION INFRASTRUCTURE
@@ -142,7 +145,6 @@ pub fn is_game_over(state: u64, precomputed: &Precomputed) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::game::{from_grid, to_grid};
 
     #[test]
     fn test_move_state() {

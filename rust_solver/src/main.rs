@@ -5,20 +5,35 @@ pub mod precompute;
 use precompute::{get_possible_moves, load_precomputed, precompute, Precomputed};
 
 pub mod algorithms {
+    pub mod expectimax;
     pub mod random;
 }
+#[allow(unused_imports)]
+use algorithms::expectimax::get_expectimax_move;
+#[allow(unused_imports)]
 use algorithms::random::get_random_move;
+use rust_solver::game::print_board;
 
 fn run_game(precomputed: &Precomputed) -> (u64, u64) {
     let mut num_moves = 0;
     let mut state = get_initial_state();
     let mut moves = get_possible_moves(state, precomputed);
     while moves.len() > 0 {
-        let (_move, new_state) = get_random_move(state, moves, precomputed);
+        let curr_score = get_score(state);
+        let mut depth = 2;
+        if curr_score >= 10000 {
+            depth = 3;
+        }
+        if curr_score >= 50000 {
+            depth = 4;
+        }
+        let (_move, new_state) = get_expectimax_move(state, moves, depth, precomputed);
         state = add_random_tile(new_state);
         moves = get_possible_moves(state, precomputed);
         num_moves += 1;
+        print_board(state)
     }
+    println!("Score: {}", get_score(state));
     (get_score(state), num_moves)
 }
 
