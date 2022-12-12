@@ -37,7 +37,22 @@ fn run_expectimax_game(
     let mut state = State::new();
     let mut moves = get_possible_moves(state, precomputed);
     while moves[0].0 != Direction::Invalid {
-        let (_move, new_state) = get_expectimax_move(state, moves, 4, precomputed, transposition);
+        let score = state.get_score();
+        let mut depth = 2;
+        if score > 5000 {
+            depth = 3;
+        }
+        if score > 10000 {
+            depth = 4;
+        }
+        if score > 50000 {
+            depth = 5;
+        }
+        if score > 100000 {
+            depth = 6;
+        }
+        let (_move, new_state) =
+            get_expectimax_move(state, moves, depth, precomputed, transposition);
         state = new_state.add_random_tile();
         num_moves += 1;
         moves = get_possible_moves(state, precomputed);

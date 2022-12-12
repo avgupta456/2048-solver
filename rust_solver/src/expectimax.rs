@@ -4,8 +4,8 @@ use super::game::{Direction, State};
 use super::precompute::{get_possible_moves, Precomputed, TranspositionTable};
 
 // TODO: Precompute this
-fn heuristic(state: State) -> u64 {
-    let pow_grid = [
+fn pow_grid(state: &State) -> [[u64; 4]; 4] {
+    [
         [
             2u64.pow(state.grid[0][0] as u32),
             2u64.pow(state.grid[0][1] as u32),
@@ -30,7 +30,11 @@ fn heuristic(state: State) -> u64 {
             2u64.pow(state.grid[3][2] as u32),
             2u64.pow(state.grid[3][3] as u32),
         ],
-    ];
+    ]
+}
+
+fn corner_heuristic(state: State) -> u64 {
+    let pow_grid = pow_grid(&state);
 
     let lower_left = 10 * pow_grid[3][0]
         + 5 * pow_grid[2][0]
@@ -79,6 +83,35 @@ fn heuristic(state: State) -> u64 {
     )
 }
 
+#[allow(dead_code)]
+fn monotonic_heuristic(state: State) -> u64 {
+    let pow_grid = pow_grid(&state);
+
+    let mut left = 1_000_000;
+    let mut right = 1_000_000;
+    let mut up = 1_000_000;
+    let mut down = 1_000_000;
+    for i in 0..4 {
+        for j in 0..3 {
+            let a = pow_grid[i][j];
+            let b = pow_grid[i][j + 1];
+            left += if a >= b { a + b } else { 12 * (a - b) };
+            left += if a == b { a } else { 0 };
+            right += if a <= b { a + b } else { 12 * (b - a) };
+            right += if a == b { a } else { 0 };
+
+            let a = pow_grid[j][i];
+            let b = pow_grid[j + 1][i];
+            up += if a >= b { a + b } else { 12 * (a - b) };
+            up += if a == b { a } else { 0 };
+            down += if a <= b { a + b } else { 12 * (b - a) };
+            down += if a == b { a } else { 0 };
+        }
+    }
+
+    cmp::max(left, right) + cmp::max(up, down)
+}
+
 fn _get_expectimax_move(
     state: State,
     prob: f32,
@@ -93,7 +126,7 @@ fn _get_expectimax_move(
     }
 
     if depth == 0 {
-        return (moves[0].0, heuristic(state) as f32);
+        return (moves[0].0, corner_heuristic(state) as f32);
     }
 
     let lookup = transposition.get(&state, depth, prob);
