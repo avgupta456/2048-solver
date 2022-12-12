@@ -1,9 +1,9 @@
 use std::cmp;
 
-#[allow(unused_imports)]
-use crate::game::{Direction, State};
-use crate::precompute::{get_possible_moves, Precomputed};
+use super::game::{Direction, State};
+use super::precompute::{get_possible_moves, Precomputed, TranspositionTable};
 
+// TODO: Precompute this
 fn heuristic(state: State) -> u64 {
     let pow_grid = [
         [
@@ -85,18 +85,28 @@ fn _get_expectimax_move(
     depth: u16,
     min_prob: f32,
     precomputed: &Precomputed,
+    transposition: &mut TranspositionTable,
 ) -> (Direction, f32) {
+    let lookup = transposition.get(&state, depth, prob);
+    if let Some((direction, score)) = lookup {
+        return (*direction, *score);
+    }
+
     let moves = get_possible_moves(state, precomputed);
-    if moves.len() == 0 {
-        return (Direction::Left, 0.0);
+    if moves[0].0 == Direction::Invalid {
+        return (Direction::Invalid, 0.0);
     }
 
     if depth == 0 {
         return (moves[0].0, heuristic(state) as f32);
     }
 
-    let mut best_move = (moves[0].0, 0.0);
+    let mut best_move = (Direction::Invalid, -1.0);
     for (direction, next_state) in moves {
+        if direction == Direction::Invalid {
+            continue;
+        }
+
         let empty_tiles = next_state.get_empty_tiles();
         let frac = 1.0 / (empty_tiles.len() as f32);
         let mut next_score = 0.0;
@@ -112,6 +122,7 @@ fn _get_expectimax_move(
                 depth - 1,
                 min_prob,
                 precomputed,
+                transposition,
             );
             next_score += frac * 0.9 * _next_score.1;
             denom += frac * 0.9;
@@ -125,6 +136,7 @@ fn _get_expectimax_move(
                     depth - 1,
                     min_prob,
                     precomputed,
+                    transposition,
                 );
                 next_score += frac * 0.1 * _next_score.1;
                 denom += frac * 0.1;
@@ -136,19 +148,22 @@ fn _get_expectimax_move(
         }
     }
 
+    transposition.insert(state, depth, prob, best_move);
+
     best_move
 }
 
 pub fn get_expectimax_move(
     state: State,
-    moves: Vec<(Direction, State)>,
+    moves: [(Direction, State); 4],
     depth: u16,
     precomputed: &Precomputed,
+    transposition: &mut TranspositionTable,
 ) -> (Direction, State) {
     let min_prob = 0.1 / ((1 << (depth + 4)) as f32);
-    let (direction, _) = _get_expectimax_move(state, 1.0, depth, min_prob, precomputed);
-    println!("Expectimax move: {:?}", direction);
+    let (direction, _) =
+        _get_expectimax_move(state, 1.0, depth, min_prob, precomputed, transposition);
     let next_state = moves.iter().find(|(dir, _)| *dir == direction).unwrap().1;
-
+    transposition.clear();
     (direction, next_state)
 }

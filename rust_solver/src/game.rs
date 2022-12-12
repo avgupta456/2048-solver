@@ -1,11 +1,12 @@
 use rand;
+use serde::{Deserialize, Serialize};
 
 /*
 ENUMS
 */
 
 // NOTE: Must index state.grid[y][x]
-#[derive(Debug, Eq, PartialEq, Copy, Clone)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct State {
     pub grid: [[u16; 4]; 4],
 }
@@ -133,12 +134,13 @@ impl State {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Direction {
     Left,
     Right,
     Up,
     Down,
+    Invalid,
 }
 
 /*

@@ -1,42 +1,46 @@
 pub mod game;
-use game::State;
+use game::{Direction, State};
 
 pub mod precompute;
-use precompute::{get_possible_moves, load_precomputed, precompute, Precomputed};
+use precompute::{
+    get_possible_moves, load_precomputed, precompute, Precomputed, TranspositionTable,
+};
 
-pub mod algorithms {
-    pub mod expectimax;
-    pub mod random;
-}
+pub mod expectimax;
 #[allow(unused_imports)]
-use algorithms::expectimax::get_expectimax_move;
+use expectimax::get_expectimax_move;
+
+pub mod random;
 #[allow(unused_imports)]
-use algorithms::random::get_random_move;
+use random::get_random_move;
 
 #[allow(dead_code)]
 fn run_random_game(precomputed: &Precomputed) -> (u64, u64) {
     let mut num_moves = 0;
     let mut state = State::new();
     let mut moves = get_possible_moves(state, precomputed);
-    while moves.len() > 0 {
+    while moves[0].0 != Direction::Invalid {
         let (_move, new_state) = get_random_move(state, moves, precomputed);
         state = new_state.add_random_tile();
-        moves = get_possible_moves(state, precomputed);
         num_moves += 1;
+        moves = get_possible_moves(state, precomputed);
     }
     (state.get_score(), num_moves)
 }
 
 #[allow(dead_code)]
-fn run_expectimax_game(precomputed: &Precomputed) -> (u64, u64) {
+fn run_expectimax_game(
+    precomputed: &Precomputed,
+    transposition: &mut TranspositionTable,
+) -> (u64, u64) {
     let mut num_moves = 0;
     let mut state = State::new();
     let mut moves = get_possible_moves(state, precomputed);
-    while moves.len() > 0 {
-        let (_move, new_state) = get_expectimax_move(state, moves, 4, precomputed);
+    while moves[0].0 != Direction::Invalid {
+        let (_move, new_state) = get_expectimax_move(state, moves, 4, precomputed, transposition);
         state = new_state.add_random_tile();
-        moves = get_possible_moves(state, precomputed);
         num_moves += 1;
+        moves = get_possible_moves(state, precomputed);
         state.print_board()
     }
     println!("Score: {}", state.get_score());
@@ -49,6 +53,7 @@ fn main() {
         precompute();
     }
     let precomputed: &Precomputed = &load_precomputed();
+    let transposition: &mut TranspositionTable = &mut TranspositionTable::new();
     println!("Loaded precomputed data!");
 
     let start = std::time::Instant::now();
@@ -58,11 +63,14 @@ fn main() {
     let mut games = 0;
     let mut moves = 0;
     while start.elapsed().as_secs() < time {
-        let (temp_score, temp_moves) = run_random_game(precomputed);
+        // let (temp_score, temp_moves) = run_random_game(precomputed);
+        let (temp_score, temp_moves) = run_expectimax_game(precomputed, transposition);
         score += temp_score;
         moves += temp_moves;
         games += 1;
     }
+
+    let time = start.elapsed().as_secs();
 
     println!("Games / Sec: {}", games as f64 / time as f64);
     println!("Moves / Sec: {}", moves as f64 / time as f64);

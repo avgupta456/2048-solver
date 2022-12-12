@@ -16,3 +16,6 @@ serde_json = "1.0.89"
 [[bench]]
 name = "benchmark"
 harness = false
+
+[profile.release]
+debug = true
