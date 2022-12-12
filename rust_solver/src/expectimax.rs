@@ -87,11 +87,6 @@ fn _get_expectimax_move(
     precomputed: &Precomputed,
     transposition: &mut TranspositionTable,
 ) -> (Direction, f32) {
-    let lookup = transposition.get(&state, depth, prob);
-    if let Some((direction, score)) = lookup {
-        return (*direction, *score);
-    }
-
     let moves = get_possible_moves(state, precomputed);
     if moves[0].0 == Direction::Invalid {
         return (Direction::Invalid, 0.0);
@@ -99,6 +94,11 @@ fn _get_expectimax_move(
 
     if depth == 0 {
         return (moves[0].0, heuristic(state) as f32);
+    }
+
+    let lookup = transposition.get(&state, depth, prob);
+    if let Some((direction, score)) = lookup {
+        return (*direction, *score);
     }
 
     let mut best_move = (Direction::Invalid, -1.0);
