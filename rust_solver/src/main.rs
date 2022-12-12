@@ -75,19 +75,27 @@ fn main() {
     let time = 10;
 
     let mut score = 0;
+    let mut min_score = u64::MAX;
     let mut games = 0;
     let mut moves = 0;
     while start.elapsed().as_secs() < time {
         // let (temp_score, temp_moves) = run_random_game(precomputed);
         let (temp_score, temp_moves) = run_expectimax_game(precomputed, transposition);
         score += temp_score;
+        if temp_score < min_score {
+            min_score = temp_score;
+        }
         moves += temp_moves;
         games += 1;
     }
 
     let time = start.elapsed().as_secs();
 
-    println!("Games / Sec: {}", games as f64 / time as f64);
-    println!("Moves / Sec: {}", moves as f64 / time as f64);
+    println!("Games: {}", games as f64);
+    println!("Time: {}", time as f64);
+    println!("Seconds / Game: {}", time as f64 / games as f64);
+    println!("Moves / Game: {}", moves as f64 / games as f64);
+    println!("Moves / Second: {}", moves as f64 / time as f64);
     println!("Score / Game: {}", score as f64 / games as f64);
+    println!("Min Score: {}", min_score);
 }
