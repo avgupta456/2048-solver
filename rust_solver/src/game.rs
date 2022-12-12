@@ -68,12 +68,12 @@ impl State {
         new_state
     }
 
-    pub fn get_empty_tiles(&self) -> Vec<u16> {
+    pub fn get_empty_tiles(&self) -> Vec<(u16, u16)> {
         let mut empty_tiles = Vec::new();
         for y in 0..4 {
             for x in 0..4 {
                 if self.grid[y as usize][x as usize] == 0 {
-                    empty_tiles.push(y * 4 + x);
+                    empty_tiles.push((x, y));
                 }
             }
         }
@@ -86,9 +86,7 @@ impl State {
             return *self;
         }
         let index = rand::random::<usize>() % empty_tiles.len();
-        let tile = empty_tiles[index];
-        let x = tile % 4;
-        let y = tile / 4;
+        let (x, y) = empty_tiles[index];
         let value = if rand::random::<f32>() < 0.9 { 1 } else { 2 };
         let mut new_state = *self;
         new_state.grid[y as usize][x as usize] = value;
@@ -239,8 +237,8 @@ mod tests {
         };
         let empty_tiles = state.get_empty_tiles();
         assert_eq!(empty_tiles.len(), 2);
-        assert_eq!(empty_tiles[0], 0);
-        assert_eq!(empty_tiles[1], 6);
+        assert_eq!(empty_tiles[0], (0, 0));
+        assert_eq!(empty_tiles[1], (2, 1));
     }
 
     #[test]

@@ -111,9 +111,7 @@ fn _get_expectimax_move(
         let frac = 1.0 / (empty_tiles.len() as f32);
         let mut next_score = 0.0;
         let mut denom = 0.0;
-        for tile in empty_tiles {
-            let x = tile % 4;
-            let y = tile / 4;
+        for (x, y) in empty_tiles {
             let mut temp_state = next_state;
             temp_state.grid[y as usize][x as usize] = 1;
             let _next_score = _get_expectimax_move(
