@@ -59,7 +59,7 @@ fn main() {
 
     let args: Vec<String> = std::env::args().collect();
     if args.len() < 2 {
-        println!("Usage: rust_solver.exe <depth>");
+        println!("Usage: ./rust_solver <depth>");
         return;
     }
     let depth = args[1].parse::<u16>().unwrap();
