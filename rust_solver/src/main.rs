@@ -30,6 +30,7 @@ fn run_random_game(precomputed: &Precomputed) -> (u64, u64) {
 
 #[allow(dead_code)]
 fn run_expectimax_game(
+    depth: u16,
     precomputed: &Precomputed,
     transposition: &mut TranspositionTable,
 ) -> (u64, u64) {
@@ -37,20 +38,6 @@ fn run_expectimax_game(
     let mut state = State::new();
     let mut moves = get_possible_moves(state, precomputed);
     while moves[0].0 != Direction::Invalid {
-        let score = state.get_score();
-        let mut depth = 2;
-        if score > 5000 {
-            depth = 3;
-        }
-        if score > 10000 {
-            depth = 4;
-        }
-        if score > 50000 {
-            depth = 5;
-        }
-        if score > 100000 {
-            depth = 6;
-        }
         let (_move, new_state) =
             get_expectimax_move(state, moves, depth, precomputed, transposition);
         state = new_state.add_random_tile();
@@ -58,7 +45,6 @@ fn run_expectimax_game(
         moves = get_possible_moves(state, precomputed);
         state.print_board()
     }
-    println!("Score: {}", state.get_score());
     (state.get_score(), num_moves)
 }
 
@@ -71,31 +57,20 @@ fn main() {
     let transposition: &mut TranspositionTable = &mut TranspositionTable::new();
     println!("Loaded precomputed data!");
 
-    let start = std::time::Instant::now();
-    let time = 10;
-
-    let mut score = 0;
-    let mut min_score = u64::MAX;
-    let mut games = 0;
-    let mut moves = 0;
-    while start.elapsed().as_secs() < time {
-        // let (temp_score, temp_moves) = run_random_game(precomputed);
-        let (temp_score, temp_moves) = run_expectimax_game(precomputed, transposition);
-        score += temp_score;
-        if temp_score < min_score {
-            min_score = temp_score;
-        }
-        moves += temp_moves;
-        games += 1;
+    let args: Vec<String> = std::env::args().collect();
+    if args.len() < 2 {
+        println!("Usage: rust_solver.exe <depth>");
+        return;
     }
+    let depth = args[1].parse::<u16>().unwrap();
 
-    let time = start.elapsed().as_secs();
+    let start = std::time::Instant::now();
+    let (score, moves) = run_expectimax_game(depth, precomputed, transposition);
+    let time = start.elapsed().as_millis() as f32 / 1000.0;
 
-    println!("Games: {}", games as f64);
-    println!("Time: {}", time as f64);
-    println!("Seconds / Game: {}", time as f64 / games as f64);
-    println!("Moves / Game: {}", moves as f64 / games as f64);
-    println!("Moves / Second: {}", moves as f64 / time as f64);
-    println!("Score / Game: {}", score as f64 / games as f64);
-    println!("Min Score: {}", min_score);
+    println!("---");
+    println!("Score:   \t{}", score);
+    println!("Moves:   \t{}", moves);
+    println!("Time:    \t{}s", (time * 1000.0).round() / 1000.0);
+    println!("Moves/s: \t{}", (moves as f32 / time).round());
 }

@@ -114,19 +114,25 @@ impl State {
     }
 
     pub fn print_board(&self) {
+        println!("┌───────┬───────┬───────┬───────┐");
         for y in 0..4 {
+            print!("│");
             for x in 0..4 {
                 let value = self.grid[x as usize][y as usize];
                 // print num or . padded with tab
                 if value == 0 {
-                    print!(".\t");
+                    print!("       │");
                 } else {
-                    print!("{}\t", 2u64.pow(value as u32));
+                    print!(" {:5} │", 2u64.pow(value as u32));
                 }
             }
             println!();
+            if y < 3 {
+                println!("├───────┼───────┼───────┼───────┤");
+            } else {
+                println!("└───────┴───────┴───────┴───────┘");
+            }
         }
-        println!();
         println!("Score: {}", self.get_score());
         println!();
     }

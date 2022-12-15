@@ -83,35 +83,6 @@ fn corner_heuristic(state: State) -> u64 {
     )
 }
 
-#[allow(dead_code)]
-fn monotonic_heuristic(state: State) -> u64 {
-    let pow_grid = pow_grid(&state);
-
-    let mut left = 1_000_000;
-    let mut right = 1_000_000;
-    let mut up = 1_000_000;
-    let mut down = 1_000_000;
-    for i in 0..4 {
-        for j in 0..3 {
-            let a = pow_grid[i][j];
-            let b = pow_grid[i][j + 1];
-            left += if a >= b { a + b } else { 12 * (a - b) };
-            left += if a == b { a } else { 0 };
-            right += if a <= b { a + b } else { 12 * (b - a) };
-            right += if a == b { a } else { 0 };
-
-            let a = pow_grid[j][i];
-            let b = pow_grid[j + 1][i];
-            up += if a >= b { a + b } else { 12 * (a - b) };
-            up += if a == b { a } else { 0 };
-            down += if a <= b { a + b } else { 12 * (b - a) };
-            down += if a == b { a } else { 0 };
-        }
-    }
-
-    cmp::max(left, right) + cmp::max(up, down)
-}
-
 fn _get_expectimax_move(
     state: State,
     prob: f32,

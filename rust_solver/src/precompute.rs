@@ -183,7 +183,7 @@ impl TranspositionTable {
     }
 
     pub fn clear(&mut self) {
-        self.print_stats();
+        // self.print_stats();
         self.table.clear();
         self.items = 0;
         self.hits = 0;
